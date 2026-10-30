@@ -59,3 +59,35 @@ describe("readable time and states", () => {
   it("renders explicit failure states", () =>
     expect(human("model_missing")).toBe("Model missing"));
 });
+
+describe("permission race protection", () => {
+  it("releases a late microphone grant after capture was cancelled, without creating a recorder", async () => {
+    vi.stubGlobal("isSecureContext", true);
+    const stop = vi.fn(),
+      construct = vi.fn();
+    let grant!: (value: MediaStream) => void;
+    vi.stubGlobal("navigator", {
+      mediaDevices: {
+        getUserMedia: () =>
+          new Promise<MediaStream>((resolve) => {
+            grant = resolve;
+          }),
+      },
+    });
+    vi.stubGlobal(
+      "MediaRecorder",
+      class {
+        constructor() {
+          construct();
+        }
+      },
+    );
+    const adapter = new BrowserMicrophoneAdapter();
+    const pending = adapter.start();
+    adapter.cancel();
+    grant({ getTracks: () => [{ stop }] } as unknown as MediaStream);
+    await expect(pending).rejects.toThrow("cancelled");
+    expect(stop).toHaveBeenCalled();
+    expect(construct).not.toHaveBeenCalled();
+  });
+});

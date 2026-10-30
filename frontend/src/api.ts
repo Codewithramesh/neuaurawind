@@ -1,4 +1,11 @@
 export let csrf = "";
+let storeScope = "";
+export function setStoreScope(value: string) {
+  storeScope = value;
+}
+export function getStoreScope() {
+  return storeScope;
+}
 export function setCSRF(value: string) {
   csrf = value;
 }
@@ -19,6 +26,8 @@ export async function api<T>(
   if (options.body && typeof options.body === "string")
     headers.set("Content-Type", "application/json");
   if (csrf) headers.set("X-CSRF-Token", csrf);
+  if (storeScope && !headers.has("X-Store-Id"))
+    headers.set("X-Store-Id", storeScope);
   const response = await fetch("/api/v1" + path, {
     ...options,
     headers,

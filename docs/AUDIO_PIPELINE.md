@@ -1,5 +1,8 @@
 # Audio pipeline
 
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 ## Capture
 
 The browser only requests `getUserMedia` after consent attestation and an explicit Start button. It detects supported MediaRecorder types (WebM/Opus, MP4, Ogg), records chunks locally, supports pause/resume, shows recording state/time, stops at the configured duration limit, cancels/releases tracks and offers preview. Permission and recorder failures are shown. Source adapters yield bytes and MIME metadata; none calls AI from the browser.

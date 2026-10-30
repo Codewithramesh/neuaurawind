@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 import { useDialog } from "./useDialog";
 import { useResource } from "./useResource";
-import { Badge, ErrorNotice, InsightCard } from "./ui";
+import { Badge, ErrorNotice } from "./ui";
 import { TaskRow } from "./Tasks";
+import { ReviewFinding } from "./ReviewFinding";
+import { json } from "./api";
 import { api, human, dateLabel, durationLabel } from "./api";
 import type { ConversationDetail } from "./types";
 
@@ -20,8 +22,10 @@ export function ConversationPanel({
   id,
   onClose,
   onDeleted,
+  canReview = false,
 }: {
   id: string;
+  canReview?: boolean;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -31,7 +35,8 @@ export function ConversationPanel({
     2500,
   );
   const [actionError, setActionError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [correcting, setCorrecting] = useState(false);
   return (
     <div className="modal-backdrop detail-backdrop">
       <section
@@ -58,6 +63,7 @@ export function ConversationPanel({
         {data && (
           <>
             <div className="detail-meta">
+              <Badge status={data.session_state} />
               <Badge status={data.status} />
               <span>{human(data.source_type)}</span>
               <span>{dateLabel(data.created_at)}</span>
@@ -108,6 +114,39 @@ export function ConversationPanel({
                 )}
               </div>
             )}
+            <section className="detail-section">
+              <h3>Session purpose and consent</h3>
+              <p>{data.purpose}</p>
+              <p>
+                {data.consent_valid
+                  ? "Every listed participant has confirmed the current notice."
+                  : "Consent incomplete or withdrawn. Content is restricted."}
+              </p>
+              {data.participants.map((p) => (
+                <p key={p.id}>
+                  {p.participant_ref}: {human(p.status)}
+                </p>
+              ))}
+              <button
+                className="text-button danger"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api(`/conversations/${id}/withdraw-consent`, {
+                      method: "POST",
+                    });
+                    await refresh();
+                  } catch (e) {
+                    setActionError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Withdraw consent and restrict results
+              </button>
+            </section>
             {data.summary && (
               <section className="detail-section">
                 <h3>
@@ -152,6 +191,85 @@ export function ConversationPanel({
                   A transcript will appear after successful speech recognition.
                 </p>
               )}
+              {data.transcript && canReview && (
+                <>
+                  <button
+                    className="text-button"
+                    onClick={() => setCorrecting(!correcting)}
+                  >
+                    Correct transcript and summary
+                  </button>
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        await api(`/conversations/${id}/reanalyze`, {
+                          method: "POST",
+                        });
+                        await refresh();
+                      } catch (error) {
+                        setActionError((error as Error).message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Re-analyze saved transcript
+                  </button>
+                  {correcting && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const form = new FormData(e.currentTarget);
+                        setBusy(true);
+                        try {
+                          await api(`/conversations/${id}/transcript`, {
+                            method: "PATCH",
+                            ...json({
+                              text: form.get("text"),
+                              summary: form.get("summary"),
+                            }),
+                          });
+                          setCorrecting(false);
+                          await refresh();
+                        } catch (error) {
+                          setActionError((error as Error).message);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      <label>
+                        Corrected transcript
+                        <textarea
+                          name="text"
+                          defaultValue={data.transcript.text}
+                          required
+                          maxLength={100000}
+                        />
+                      </label>
+                      <label>
+                        Corrected summary
+                        <textarea
+                          name="summary"
+                          defaultValue={data.summary || ""}
+                          required
+                          maxLength={3000}
+                        />
+                      </label>
+                      <p className="field-help">
+                        Corrections restrict all findings and clear timestamps.
+                        Review the evidence again before sharing.
+                      </p>
+                      <button className="button primary small" disabled={busy}>
+                        Save transcript correction
+                      </button>
+                    </form>
+                  )}
+                </>
+              )}
               {data.audio_retained && (
                 <audio controls src={`/api/v1/conversations/${id}/audio`} />
               )}
@@ -162,12 +280,61 @@ export function ConversationPanel({
               </h3>
               {data.insights.length ? (
                 data.insights.map((i) => (
-                  <InsightCard key={i.id} insight={i} onOpen={() => {}} />
+                  <ReviewFinding
+                    key={i.id}
+                    finding={i}
+                    onRefresh={refresh}
+                    canReview={canReview}
+                  />
                 ))
               ) : (
                 <p className="muted">No validated insights yet.</p>
               )}
             </section>
+            {data.status === "complete" && data.consent_valid && canReview && (
+              <section className="detail-section">
+                <p>
+                  All findings must be approved or rejected before they appear
+                  in shared intelligence.
+                </p>
+                <button
+                  className="button primary"
+                  disabled={
+                    busy ||
+                    data.session_state === "approved" ||
+                    data.insights.some(
+                      (i) =>
+                        !["approved", "rejected"].includes(i.review_status),
+                    )
+                  }
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await api(`/conversations/${id}/approve`, {
+                        method: "POST",
+                      });
+                      await refresh();
+                    } catch (e) {
+                      setActionError((e as Error).message);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Approve session for sharing
+                </button>
+              </section>
+            )}
+            {data.review_history.length > 0 && (
+              <section className="detail-section">
+                <h3>Review history</h3>
+                {data.review_history.map((e) => (
+                  <p key={e.id}>
+                    {human(e.action)} · {dateLabel(e.created_at)}
+                  </p>
+                ))}
+              </section>
+            )}
             {data.tasks.length > 0 && (
               <section className="detail-section">
                 <h3>
@@ -187,7 +354,7 @@ export function ConversationPanel({
               <span>
                 <ShieldCheck size={14} />
                 {data.consent?.attested
-                  ? "Consent attestation recorded"
+                  ? "Operator attestation only; see participant decisions above"
                   : "No consent record"}
               </span>
               <button

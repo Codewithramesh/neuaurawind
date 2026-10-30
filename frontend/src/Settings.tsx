@@ -81,7 +81,7 @@ export function SettingsPage({ onChange }: { onChange: () => Promise<void> }) {
             preference, request, sales, and operational categories are always
             available.
           </p>
-          <button className="button primary small" disabled={busy}>
+          <button className="button primary small" disabled={busy || !["owner","admin"].includes(data.role)}>
             Save profile
           </button>
         </form>
@@ -101,7 +101,7 @@ export function SettingsPage({ onChange }: { onChange: () => Promise<void> }) {
             />
           </div>
           {!data.transcription.ready && (
-            <pre>.venv/bin/python scripts/download_model.py</pre>
+            <p>Follow the local model setup steps in the setup guide. On Windows, run Download models.cmd in the project folder.</p>
           )}
           <div className="engine">
             <span className="engine-icon">
@@ -159,7 +159,7 @@ export function SettingsPage({ onChange }: { onChange: () => Promise<void> }) {
           <h2>Take a test on your phone</h2>
           <p>
             Microphone capture needs trusted HTTPS. Use the private Tailscale
-            Serve setup in <code>docs/PHONE_TESTING.md</code> to reach this Mac
+            Serve setup in <code>docs/PHONE_TESTING.md</code> to reach this computer
             securely.
           </p>
           <p className="field-help">

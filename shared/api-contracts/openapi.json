@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NEUAURA API",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/api/v1/health": {
@@ -835,12 +835,58 @@
         ],
         "summary": "Overview",
         "operationId": "overview_api_v1_overview_get",
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1188,6 +1234,708 @@
           }
         }
       }
+    },
+    "/api/v1/stores": {
+      "get": {
+        "tags": [
+          "Membership"
+        ],
+        "summary": "Stores",
+        "operationId": "stores_api_v1_stores_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Membership"
+        ],
+        "summary": "Add Store",
+        "operationId": "add_store_api_v1_stores_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members": {
+      "get": {
+        "tags": [
+          "Membership"
+        ],
+        "summary": "Members",
+        "operationId": "members_api_v1_members_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Membership"
+        ],
+        "summary": "Add Member",
+        "operationId": "add_member_api_v1_members_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/{member_id}": {
+      "patch": {
+        "tags": [
+          "Membership"
+        ],
+        "summary": "Edit Member",
+        "operationId": "edit_member_api_v1_members__member_id__patch",
+        "parameters": [
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Member Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/participant-consent": {
+      "get": {
+        "tags": [
+          "Participant consent"
+        ],
+        "summary": "Notice",
+        "operationId": "notice_api_v1_participant_consent_get",
+        "parameters": [
+          {
+            "name": "x-consent-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Consent-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Participant consent"
+        ],
+        "summary": "Decide",
+        "operationId": "decide_api_v1_participant_consent_post",
+        "parameters": [
+          {
+            "name": "x-consent-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Consent-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/participants": {
+      "post": {
+        "tags": [
+          "Participant consent"
+        ],
+        "summary": "Participants",
+        "operationId": "participants_api_v1_conversations__cid__participants_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantList"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/withdraw-consent": {
+      "post": {
+        "tags": [
+          "Participant consent"
+        ],
+        "summary": "Withdraw",
+        "operationId": "withdraw_api_v1_conversations__cid__withdraw_consent_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/transition": {
+      "post": {
+        "tags": [
+          "Session lifecycle"
+        ],
+        "summary": "Session Transition",
+        "operationId": "session_transition_api_v1_conversations__cid__transition_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Transition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/capture-heartbeat": {
+      "post": {
+        "tags": [
+          "Session lifecycle"
+        ],
+        "summary": "Capture Heartbeat",
+        "operationId": "capture_heartbeat_api_v1_conversations__cid__capture_heartbeat_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureHeartbeat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/insights/{finding_id}/review": {
+      "patch": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Review Finding",
+        "operationId": "review_finding_api_v1_insights__finding_id__review_patch",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindingReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/approve": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Approve",
+        "operationId": "approve_api_v1_conversations__cid__approve_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/transcript": {
+      "patch": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Correct Transcript",
+        "operationId": "correct_transcript_api_v1_conversations__cid__transcript_patch",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptCorrection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{cid}/reanalyze": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Reanalyze",
+        "operationId": "reanalyze_api_v1_conversations__cid__reanalyze_post",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports": {
+      "get": {
+        "tags": [
+          "Exports"
+        ],
+        "summary": "Export",
+        "operationId": "export_api_v1_exports_get",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "json",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/retention": {
+      "patch": {
+        "tags": [
+          "Workspace"
+        ],
+        "summary": "Retention",
+        "operationId": "retention_api_v1_settings_retention_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1222,6 +1970,13 @@
             ],
             "title": "Industry",
             "default": "restaurant"
+          },
+          "store_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Store Name",
+            "default": "Main store"
           }
         },
         "additionalProperties": false,
@@ -1232,6 +1987,30 @@
           "name"
         ],
         "title": "Bootstrap"
+      },
+      "CaptureHeartbeat": {
+        "properties": {
+          "consent_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Consent Version"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "recording",
+              "paused"
+            ],
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "consent_version",
+          "state"
+        ],
+        "title": "CaptureHeartbeat"
       },
       "ChunkResponse": {
         "properties": {
@@ -1377,6 +2156,22 @@
             "type": "string",
             "title": "Connection"
           },
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "capabilities": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Capabilities"
+          },
           "credential": {
             "type": "string",
             "title": "Credential"
@@ -1397,6 +2192,8 @@
           "health",
           "created_at",
           "connection",
+          "store_id",
+          "capabilities",
           "credential"
         ],
         "title": "DeviceProvisioned"
@@ -1438,6 +2235,17 @@
               }
             ],
             "title": "Firmware"
+          },
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
           }
         },
         "additionalProperties": false,
@@ -1523,6 +2331,22 @@
           "connection": {
             "type": "string",
             "title": "Connection"
+          },
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "capabilities": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Capabilities"
           }
         },
         "type": "object",
@@ -1539,9 +2363,179 @@
           "battery",
           "health",
           "created_at",
-          "connection"
+          "connection",
+          "store_id",
+          "capabilities"
         ],
         "title": "DeviceResponse"
+      },
+      "FindingReview": {
+        "properties": {
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "corrected",
+              "approved",
+              "rejected",
+              "restricted"
+            ],
+            "title": "Review Status"
+          },
+          "sharing_checked": {
+            "type": "boolean",
+            "title": "Sharing Checked",
+            "default": false
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 180,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic"
+          },
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "stated",
+                  "inferred"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "sentiment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "positive",
+                  "negative",
+                  "neutral"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment"
+          },
+          "uncertainty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertainty"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "success_metric": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Metric"
+          },
+          "priority_rationale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "review_status"
+        ],
+        "title": "FindingReview"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1632,6 +2626,123 @@
         ],
         "title": "Login"
       },
+      "MemberCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "manager",
+              "staff"
+            ],
+            "title": "Role",
+            "default": "staff"
+          },
+          "store_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Store Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "MemberCreate"
+      },
+      "MemberUpdate": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "manager",
+              "staff"
+            ],
+            "title": "Role"
+          },
+          "store_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Store Ids"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "MemberUpdate"
+      },
+      "ParticipantDecision": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "grant",
+              "withdraw",
+              "decline"
+            ],
+            "title": "Decision"
+          },
+          "informed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Informed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "informed"
+        ],
+        "title": "ParticipantDecision"
+      },
+      "ParticipantList": {
+        "properties": {
+          "participant_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Participant Refs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "participant_refs"
+        ],
+        "title": "ParticipantList"
+      },
       "ProfileUpdate": {
         "properties": {
           "name": {
@@ -1667,6 +2778,41 @@
         ],
         "title": "ProfileUpdate"
       },
+      "RetentionPolicy": {
+        "properties": {
+          "raw_audio_hours": {
+            "type": "integer",
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Raw Audio Hours",
+            "default": 24
+          },
+          "transcript_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Transcript Days",
+            "default": 30
+          },
+          "derived_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Derived Days",
+            "default": 30
+          },
+          "consent_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Consent Days",
+            "default": 30
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RetentionPolicy"
+      },
       "SessionCreate": {
         "properties": {
           "title": {
@@ -1679,6 +2825,7 @@
             "type": "string",
             "enum": [
               "browser",
+              "phone_microphone",
               "upload",
               "device"
             ],
@@ -1686,9 +2833,53 @@
             "default": "browser"
           },
           "consent_attested": {
-            "type": "boolean",
-            "const": true,
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Consent Attested"
+          },
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Purpose"
+          },
+          "participant_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Participant Refs"
           },
           "language": {
             "type": "string",
@@ -1713,7 +2904,8 @@
         "type": "object",
         "required": [
           "title",
-          "consent_attested"
+          "purpose",
+          "participant_refs"
         ],
         "title": "SessionCreate"
       },
@@ -1784,6 +2976,36 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "session_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session State"
+          },
+          "consent_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Version"
+          },
+          "participant_links": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Participant Links"
           }
         },
         "type": "object",
@@ -1804,6 +3026,18 @@
       },
       "SessionStatusResponse": {
         "properties": {
+          "session_state": {
+            "type": "string",
+            "title": "Session State"
+          },
+          "consent_version": {
+            "type": "integer",
+            "title": "Consent Version"
+          },
+          "consent_valid": {
+            "type": "boolean",
+            "title": "Consent Valid"
+          },
           "session_id": {
             "type": "string",
             "title": "Session Id"
@@ -1933,6 +3167,9 @@
         },
         "type": "object",
         "required": [
+          "session_state",
+          "consent_version",
+          "consent_valid",
           "session_id",
           "conversation_id",
           "upload_status",
@@ -2022,6 +3259,22 @@
         ],
         "title": "StatusJob"
       },
+      "StoreCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "StoreCreate"
+      },
       "TaskUpdate": {
         "properties": {
           "description": {
@@ -2070,18 +3323,6 @@
             ],
             "title": "Priority"
           },
-          "owner": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 100
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner"
-          },
           "due_date": {
             "anyOf": [
               {
@@ -2093,11 +3334,131 @@
               }
             ],
             "title": "Due Date"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 180,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "deadline_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_established",
+                  "operator_set",
+                  "reviewer_confirmed_commitment"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Basis"
+          },
+          "deadline_quote": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Quote"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "TaskUpdate"
+      },
+      "TranscriptCorrection": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 3,
+            "title": "Text"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3000,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TranscriptCorrection"
+      },
+      "Transition": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "start",
+              "pause",
+              "resume",
+              "interrupt",
+              "stop",
+              "cancel"
+            ],
+            "title": "Action"
+          },
+          "expected_state": {
+            "type": "string",
+            "title": "Expected State"
+          },
+          "consent_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Consent Version"
+          },
+          "conditions_confirmed": {
+            "type": "boolean",
+            "title": "Conditions Confirmed",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "expected_state",
+          "consent_version"
+        ],
+        "title": "Transition"
       },
       "ValidationError": {
         "properties": {

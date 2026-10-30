@@ -8,7 +8,9 @@ from .schemas import Extraction
 
 CATEGORIES = ["positive_feedback", "negative_feedback", "complaint", "customer_preference", "product_request",
               "service_request", "experience_problem", "operational_bottleneck", "purchase_intent",
-              "sales_opportunity", "pricing_objection", "competitor_mention", "unresolved_question"]
+              "sales_opportunity", "pricing_objection", "competitor_mention", "unresolved_question",
+              "customer_need", "product_quality", "service_quality", "availability", "decision", "commitment",
+              "deal_risk", "follow_up", "improvement_recommendation"]
 PROFILES = {
     "restaurant": ["food_quality", "waiting_time", "staff_behavior", "menu_request", "pricing", "cleanliness", "ambience", "service"],
     "retail": ["product_quality", "size_availability", "inventory", "pricing", "purchase_intent", "customer_preference"],
@@ -47,7 +49,7 @@ class FasterWhisperProvider:
     def transcribe(self, audio, language):
         model_path = self.settings.whisper_model_path
         if not (model_path / "model.bin").is_file():
-            raise ProcessingError("MODEL_MISSING", "Install the local speech model: .venv/bin/python scripts/download_model.py")
+            raise ProcessingError("MODEL_MISSING", "Run scripts/download_model.py with this project's virtual-environment Python. See docs/WINDOWS_SETUP.md (Windows) or docs/LOCAL_SETUP.md (macOS).")
         try:
             import onnxruntime
             onnxruntime.disable_telemetry_events()
@@ -124,7 +126,8 @@ class LLMExtractionProvider:
             "delay or workflow inefficiency=operational_bottleneck; expressed desired choice=customer_preference."
         )
         # Evidence and meaning precede classification in constrained generation.
-        order = ["evidence", "title", "description", "topic", "category", "sentiment", "basis", "confidence", "uncertainty"]
+        order = ["evidence", "title", "description", "topic", "category", "sentiment", "basis", "confidence", "uncertainty",
+                 "impact", "recommendation", "success_metric", "priority_rationale"]
         schema["$defs"]["InsightInput"]["properties"] = {key: properties[key] for key in order}
 
         system = (
@@ -134,6 +137,10 @@ class LLMExtractionProvider:
             "Use stated for explicitly spoken facts, inferred for interpretations. Confidence is an estimate, not calibrated. "
             "For inferred insights, describe the uncertainty. A size inquiry is not confirmed stock shortage or a confirmed sale. "
             "Actions are suggestions to review, linked by zero-based insight_index. Never infer owners or due dates. "
+            "Recommendations must separate spoken facts from inference and a proposed investigation. "
+            "Do not treat one complaint as a systemic failure. State sample limits in uncertainty. "
+            "When useful, provide impact without invented revenue, recommendation, a measurable success_metric, "
+            "and priority_rationale grounded in evidence. Leave unavailable fields null. "
             "Return empty arrays if there is no supported business signal. Avoid duplicate insights. "
             "Choose a category after reading each insight quotation. A question asking for an item or variant is a product_request. "
             "A compliment is positive_feedback. These differ from an explicitly expressed preferred choice. "

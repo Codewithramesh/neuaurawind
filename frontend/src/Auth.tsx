@@ -43,8 +43,8 @@ export function Auth({
           </div>
         </div>
         <span className="auth-caption">
-          <ShieldCheck size={16} /> Local first. Evidence connected. Hardware
-          ready.
+          <ShieldCheck size={16} /> Local first. Evidence connected. Wearable
+          transport pending.
         </span>
       </div>
       <div className="auth-form-area">
@@ -62,6 +62,7 @@ export function Auth({
                   headers: { "X-Setup-Token": String(f.get("token")) },
                   ...json({
                     name: f.get("name"),
+                    store_name: f.get("store_name"),
                     industry: f.get("industry"),
                     email: f.get("email"),
                     password: f.get("password"),
@@ -113,7 +114,7 @@ export function Auth({
               </label>
               <p className="field-help">
                 On your Desktop, open <strong>NEUAURA B2B</strong> and
-                double-click <strong>Copy setup token.command</strong>, then
+                double-click <strong>Copy setup token</strong>, then
                 paste here. This one-time token protects workspace creation.
               </p>
               <label>
@@ -123,6 +124,15 @@ export function Auth({
                   required
                   maxLength={120}
                   placeholder="Your business"
+                />
+              </label>
+              <label>
+                First store name
+                <input
+                  name="store_name"
+                  required
+                  maxLength={120}
+                  placeholder="e.g. Main café"
                 />
               </label>
               <label>
@@ -174,7 +184,7 @@ export function Auth({
           <div className="auth-note">
             <ShieldCheck size={15} />
             <span>
-              Your data is stored on this Mac. Recording always requires an
+              Your data is stored on this computer. Recording always requires an
               explicit action and participant consent.
             </span>
           </div>

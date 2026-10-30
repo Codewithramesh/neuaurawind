@@ -22,7 +22,15 @@ export class BrowserMicrophoneAdapter implements AudioSourceAdapter {
   private stream: MediaStream | null = null;
   private chunks: Blob[] = [];
   private captured: Blob | null = null;
+  private starting = false;
+  private generation = 0;
   async start(deviceId?: string) {
+    if (
+      this.starting ||
+      this.stream ||
+      (this.recorder && this.recorder.state !== "inactive")
+    )
+      throw new Error("A capture is already active");
     if (
       !window.isSecureContext ||
       !navigator.mediaDevices?.getUserMedia ||
@@ -31,10 +39,21 @@ export class BrowserMicrophoneAdapter implements AudioSourceAdapter {
       throw new Error(
         "Microphone access needs localhost or a trusted HTTPS connection in a supported browser.",
       );
+    this.starting = true;
+    const generation = ++this.generation;
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: deviceId ? { deviceId: { exact: deviceId } } : true,
       });
+      if (generation !== this.generation) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw new Error(
+          "Capture was cancelled before microphone permission completed.",
+        );
+      }
+      this.stream = stream;
+      if (document.visibilityState === "hidden")
+        throw new Error("Keep the app in the foreground before recording.");
       const mimeType = [
         "audio/webm;codecs=opus",
         "audio/mp4",
@@ -53,12 +72,18 @@ export class BrowserMicrophoneAdapter implements AudioSourceAdapter {
     } catch (error) {
       this.release();
       throw error;
+    } finally {
+      this.starting = false;
     }
   }
   onError(callback: (message: string) => void) {
     if (this.recorder)
       this.recorder.onerror = () =>
         callback("The microphone stopped unexpectedly. Cancel and try again.");
+    this.stream?.getTracks().forEach((track) => {
+      track.onended = () =>
+        callback("Microphone disconnected. Capture must be revalidated.");
+    });
   }
   pause() {
     if (this.recorder?.state === "recording") this.recorder.pause();
@@ -89,6 +114,7 @@ export class BrowserMicrophoneAdapter implements AudioSourceAdapter {
     });
   }
   cancel() {
+    this.generation += 1;
     if (this.recorder && this.recorder.state !== "inactive") {
       this.recorder.onstop = null;
       this.recorder.stop();
@@ -98,7 +124,10 @@ export class BrowserMicrophoneAdapter implements AudioSourceAdapter {
     this.captured = null;
   }
   private release() {
-    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream?.getTracks().forEach((t) => {
+      t.onended = null;
+      t.stop();
+    });
     this.stream = null;
   }
   submission(): AudioSubmission {
@@ -120,24 +149,14 @@ export async function sha256(blob: Blob) {
 }
 export async function uploadAudio(
   input: AudioSubmission,
-  title: string,
-  language: string,
-  key: string,
   onProgress: (progress: number) => void,
+  preparedSession?: { id: string; conversation_id: string },
 ): Promise<string> {
-  const session = await api<{ id: string; conversation_id: string }>(
-    "/sessions",
-    {
-      method: "POST",
-      headers: { "Idempotency-Key": key },
-      ...json({
-        title,
-        source_type: input.sourceType,
-        consent_attested: true,
-        language,
-      }),
-    },
-  );
+  if (!preparedSession)
+    throw new Error(
+      "Prepare the session and obtain participant consent before upload",
+    );
+  const session = preparedSession;
   const chunkSize = 4 * 1024 * 1024;
   const count = Math.ceil(input.blob.size / chunkSize);
   for (let i = 0; i < count; i++) {

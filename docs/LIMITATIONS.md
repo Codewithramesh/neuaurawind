@@ -1,5 +1,8 @@
 # Known limitations and remaining work
 
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 - A real local LLM is installed and tested: Ollama with Qwen3 4B. Real transcription, structured extraction, exact evidence, task approval, persistence and the HTTP simulator pass on synthetic English audio. This is a small-model smoke test, not a broad accuracy evaluation. Managers must review categories, interpretations and suggestions against source evidence.
 - Real speech recognition passed using macOS-synthesized English audio and the downloaded tiny.en model. Physical MacBook microphone permission/quality is NOT VERIFIED. Browser MediaRecorder itself passed with Chrome's simulated microphone. A synthetic microphone is not a substitute for physical-device acceptance.
 - Phone layout/navigation is tested at 390 × 844 in Chrome. Physical iPhone Safari/Android Chrome capture, secure phone connection and OS permissions are NOT VERIFIED. Setup is documented; no mobile background recording guarantee.

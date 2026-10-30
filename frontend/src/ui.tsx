@@ -112,10 +112,32 @@ export function InsightCard({
           <span className="category">{human(insight.category)}</span>
           <span className="muted">
             {insight.basis === "inferred" ? "Inference" : "Explicit feedback"} ·{" "}
-            {Math.round(insight.confidence * 100)}% confidence
+            {Math.round(insight.confidence * 100)}% model estimate ·
+            uncalibrated
           </span>
         </div>
         <h3>{insight.title}</h3>
+        {insight.impact && (
+          <p>
+            <strong>Potential relevance:</strong> {insight.impact}
+          </p>
+        )}
+        {insight.recommendation && (
+          <p>
+            <strong>Proposed investigation or action:</strong>{" "}
+            {insight.recommendation}
+          </p>
+        )}
+        {insight.priority_rationale && (
+          <p>
+            <strong>Priority rationale:</strong> {insight.priority_rationale}
+          </p>
+        )}
+        {insight.success_metric && (
+          <p>
+            <strong>Measure:</strong> {insight.success_metric}
+          </p>
+        )}
         <p>{insight.description}</p>
         {insight.evidence[0] && (
           <blockquote>“{insight.evidence[0].quote}”</blockquote>

@@ -1,5 +1,8 @@
 # Architecture
 
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 One deployable Python service serves the built SPA, REST API, and one durable job worker. Vite is optional during development. No microservices, paid services or production domain are required.
 
 ```mermaid

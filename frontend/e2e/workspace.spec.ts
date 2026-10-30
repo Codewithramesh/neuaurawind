@@ -32,16 +32,33 @@ test("empty dashboard, real MediaRecorder transport, TEST DOUBLE intelligence, e
   const dialog = page.getByRole("dialog");
   await expect(
     dialog.getByRole("button", { name: "Start recording" }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
   await dialog
     .getByLabel("Conversation title")
     .fill("TEST ONLY browser microphone pipeline");
+  await dialog
+    .getByLabel("Session purpose")
+    .fill("TEST ONLY consent and capture verification");
+  await dialog.getByLabel("Participant references").fill("TEST participant");
+  await dialog.getByRole("button", { name: "Prepare session" }).click();
+  await dialog
+    .getByRole("button", { name: "Participant review", exact: true })
+    .click();
+  await dialog.locator(".participant-notice").getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "I agree for myself" }).click();
+  await dialog
+    .getByRole("button", { name: "Return to operator controls" })
+    .click();
   await dialog.getByRole("checkbox").check();
+  await dialog
+    .getByRole("button", { name: "Validate consent and prepare capture" })
+    .click();
   await dialog.getByRole("button", { name: "Start recording" }).click();
   await expect(dialog.getByText("RECORDING", { exact: true })).toBeVisible();
   await page.waitForTimeout(2200);
   await dialog.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(dialog.getByText("PAUSED", { exact: true })).toBeVisible();
+  await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Resume", exact: true }).click();
   await page.waitForTimeout(800);
   await dialog.getByRole("button", { name: "Stop recording" }).click();
@@ -62,8 +79,17 @@ test("empty dashboard, real MediaRecorder transport, TEST DOUBLE intelligence, e
       { exact: true },
     ),
   ).toBeVisible();
+  await detail.locator(".finding-review").getByRole("checkbox").check();
+  await detail
+    .getByRole("button", { name: "Approve finding", exact: true })
+    .click();
+  await detail
+    .getByRole("button", { name: "Approve session for sharing" })
+    .click();
   await detail.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(detail.getByText("Approved", { exact: true })).toBeVisible();
+  await expect(
+    detail.locator(".task-row").getByText("Approved", { exact: true }),
+  ).toBeVisible();
   await detail.getByRole("button", { name: "Close conversation" }).click();
   await page
     .getByRole("button", { name: "Conversations", exact: true })
@@ -100,7 +126,7 @@ test("phone viewport navigation and no horizontal overflow (physical phone micro
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("button", { name: "Devices", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Connected devices." }),
+    page.getByRole("heading", { name: "Capture devices." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Register device" }).click();
   await page.getByLabel("Device name").fill("TEST ONLY simulator");
@@ -110,7 +136,7 @@ test("phone viewport navigation and no horizontal overflow (physical phone micro
   await expect(page.getByText("Save this device credential")).toBeVisible();
   await page.getByRole("button", { name: "I’ve saved it" }).click();
   await expect(
-    page.getByText("Simulated device · simulated telemetry"),
+    page.getByText("SIMULATED · software controls, no connected hardware"),
   ).toBeVisible();
   expect(
     await page.evaluate(

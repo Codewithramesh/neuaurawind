@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Plus, Cpu, ShieldCheck } from "lucide-react";
 import { useResource } from "./useResource";
 import { SectionTitle, ErrorNotice, Empty, Badge } from "./ui";
-import { api, json, dateLabel } from "./api";
+import { api, json, dateLabel, getStoreScope } from "./api";
 import type { Device } from "./types";
 
-export function DevicesPage() {
+export function DevicesPage({ canAdmin = false }: { canAdmin?: boolean }) {
   const { data, error, refresh } = useResource<Device[]>("/devices");
   const [add, setAdd] = useState(false),
     [credential, setCredential] = useState(""),
@@ -15,12 +15,14 @@ export function DevicesPage() {
     <>
       <SectionTitle
         eyebrow="ONE PLATFORM. EVERY SOURCE."
-        title="Connected devices"
-        description="A home for your future hardware. The same intelligence pipeline."
+        title="Capture devices"
+        description="Registered identities and observed HTTP activity. Physical wearable transport is unverified."
         action={
-          <button className="button primary" onClick={() => setAdd(true)}>
-            <Plus size={17} /> Register device
-          </button>
+          canAdmin && (
+            <button className="button primary" onClick={() => setAdd(true)}>
+              <Plus size={17} /> Register device
+            </button>
+          )
         }
       />
       <ErrorNotice message={error || message} />
@@ -55,6 +57,7 @@ export function DevicesPage() {
                     model: f.get("model"),
                     device_type: "wearable",
                     simulated: f.get("simulated") === "on",
+                    store_id: getStoreScope() || null,
                   }),
                 },
               );
@@ -122,14 +125,16 @@ export function DevicesPage() {
             </p>
             {d.simulated && (
               <span className="subtle-tag">
-                Simulated device · simulated telemetry
+                SIMULATED · software controls, no connected hardware
               </span>
             )}
             <dl>
               <div>
                 <dt>Last seen</dt>
                 <dd>
-                  {d.last_seen ? dateLabel(d.last_seen) : "Not yet connected"}
+                  {d.last_seen
+                    ? dateLabel(d.last_seen)
+                    : "No HTTP activity reported"}
                 </dd>
               </div>
               <div>
@@ -145,7 +150,13 @@ export function DevicesPage() {
                 <dd className="device-id">{d.id}</dd>
               </div>
             </dl>
-            {d.status === "authorized" && (
+            <p className="field-help">
+              Physical recording indicator: unverified.{" "}
+              {d.simulated
+                ? "Only software controls and real file transfer are supported."
+                : "No hardware command transport is integrated."}
+            </p>
+            {canAdmin && d.status === "authorized" && (
               <button
                 className="text-button danger"
                 onClick={async () => {

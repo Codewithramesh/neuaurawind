@@ -1,5 +1,10 @@
 # Use NEUAURA on this Mac
 
+For Windows x64, use [Windows setup](WINDOWS_SETUP.md) and the `.cmd` launchers. The Mac-specific paths below describe the existing Mac installation.
+
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 The **new B2B project** is stored at:
 
 `/Users/mukkararamesh/Documents/ChatGPT/neuaurab2b`

@@ -69,13 +69,13 @@ def test_missing_model_pipeline_and_retry_limit(client,app,submit,wav_bytes,sett
 
 def test_optional_captured_time_is_stored_separately(client):
     response=client.post('/api/v1/sessions',headers={'Idempotency-Key':str(uuid4())},json={
-        'title':'Offline capture','consent_attested':True,'captured_at':'2026-09-01T12:30:00+05:30'})
+        'title':'Offline capture','consent_attested':True,'purpose':'Authorized import','participant_refs':['TEST participant'],'captured_at':'2026-09-01T12:30:00+05:30'})
     assert response.status_code==201
     detail=client.get('/api/v1/conversations/'+response.json()['conversation_id']).json()
     assert detail['captured_at']=='2026-09-01T07:00:00+00:00'
     assert detail['created_at']!=detail['captured_at']
     assert client.post('/api/v1/sessions',headers={'Idempotency-Key':str(uuid4())},json={
-        'title':'Naive time','consent_attested':True,'captured_at':'2026-09-01T12:30:00'}).status_code==422
+        'title':'Naive time','consent_attested':True,'purpose':'Authorized import','participant_refs':['TEST participant'],'captured_at':'2026-09-01T12:30:00'}).status_code==422
 
 
 def test_migrations_upgrade_downgrade_and_reupgrade(tmp_path,monkeypatch):
@@ -87,15 +87,16 @@ def test_migrations_upgrade_downgrade_and_reupgrade(tmp_path,monkeypatch):
     engine=create_engine(url)
     assert 'devices' in inspect(engine).get_table_names()
     assert 'captured_at' in {x['name'] for x in inspect(engine).get_columns('conversations')}
-    command.downgrade(config,'base')
-    assert 'conversations' not in inspect(engine).get_table_names()
+    with pytest.raises(RuntimeError,match='consent and review history'):
+        command.downgrade(config,'base')
     command.upgrade(config,'head')
     assert 'evidence' in inspect(engine).get_table_names()
     engine.dispose()
 
 
 def test_aggregate_upload_limit_and_stored_integrity(client,app):
-    session=client.post('/api/v1/sessions',headers={'Idempotency-Key':str(uuid4())},json={'title':'Bounded upload','consent_attested':True}).json()
+    from tests.integration.test_api import create_session
+    session=create_session(client,title='Bounded upload').json()
     data=b'x'*700000;headers={'Content-Type':'audio/wav','X-Chunk-SHA256':hashlib.sha256(data).hexdigest()}
     path='/api/v1/sessions/'+session['id']
     assert client.post(path+'/audio?sequence=0',headers=headers,content=data).status_code==200

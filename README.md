@@ -1,10 +1,18 @@
-# NEUAURA B2B
+# NEUAURA B2B V1
+
+Complete Windows and macOS source: [Codewithramesh/neuaurawind](https://github.com/Codewithramesh/neuaurawind). On Windows, download the source ZIP from **Code → Download ZIP**, then follow [Windows setup](docs/WINDOWS_SETUP.md).
+
+**V1 workflow upgrade (29 October 2026):** store-scoped roles, individual participant confirmations, backend session transitions, withdrawal, finding/session approval, reviewed-only dashboards, member-assigned tasks and approved exports. Start with [V1 usage](docs/V1_USER_GUIDE.md), [audit](docs/V1_AUDIT.md), [access/lifecycle](docs/V1_ACCESS_AND_LIFECYCLE.md) and [implementation/verification report](docs/V1_IMPLEMENTATION_REPORT.md). Existing account credentials are preserved; previous operator attestations are not treated as participant consent.
 
 A local-first conversation-intelligence MVP for authorized business conversations, built from an empty directory. React + TypeScript + Vite, FastAPI, SQLAlchemy, Alembic, SQLite, local faster-whisper, and configurable structured LLM extraction.
 
 **Implemented and exercised:** authenticated workspace, explicit microphone capture, file uploads, persistent jobs, real local transcription, evidence validation, dashboard aggregation, task review, tenant isolation, per-device credentials, resumable authenticated uploads, simulator, retention and deletion.
 
-**Local AI is now installed:** Ollama + Qwen3 4B, plus local faster-whisper. Genuine restaurant and retail audio workflows, task review, and the device simulator have been exercised. **Physical MacBook/phone microphone acceptance is NOT VERIFIED**; earlier browser tests used a simulated microphone. No customer conversations or invented business statistics are seeded into your workspace. See [actual test results](docs/TEST_REPORT.md).
+**Local AI is installed on the existing Mac:** Ollama + Qwen3 4B, plus local faster-whisper. Genuine restaurant and retail audio workflows, task review, and the device simulator have been exercised. **Physical MacBook/phone microphone acceptance is NOT VERIFIED**; earlier browser tests used a simulated microphone. No customer conversations or invented business statistics are seeded into your workspace. See [actual test results](docs/TEST_REPORT.md).
+
+## Windows setup
+
+Use native Windows x64 with Python 3.12, Node 22.12+, the Visual C++ x64 runtime and Ollama. Follow [Windows setup and usage](docs/WINDOWS_SETUP.md), then double-click **Setup NEUAURA.cmd**, **Download models.cmd**, and **Start NEUAURA.cmd**. Windows creates its own environment and workspace; do not copy a Mac `.venv`. Native Windows execution/microphone acceptance remains to be completed on a Windows PC.
 
 ## Start on this Mac
 
@@ -39,30 +47,32 @@ ollama pull qwen3:4b
 
 Settings shows the configured engines. The default transcript endpoint is loopback only. Remote endpoints require explicit `NEUAURA_ALLOW_CLOUD=true` and HTTPS; no automatic cloud fallback exists. See [setup](docs/LOCAL_SETUP.md) for an optional compatible API endpoint and model changes.
 
-## Test with your MacBook microphone
+## Test with your computer microphone
 
 1. Open `http://localhost:8000`, create the workspace, and sign in.
 2. Configure Ollama as above for full extraction. Without it, speech transcripts still persist and the job displays an actionable failure.
-3. Click **New conversation**. Name it and attest that you have the required permission from participants.
-4. Click **Start recording** and allow the browser's microphone permission. Say a short, authorized business conversation in English.
-5. Pause/resume if needed; stop, listen to the preview, and click **Analyze conversation**.
-6. The conversation panel polls automatically. Inspect the transcript, exact evidence, uncertainty, and suggested tasks. Approve a task if appropriate.
-7. Restart the application and inspect Conversation history to verify persistence. Retry an AI failure after installing/configuring its model; the stored transcript is reused.
+3. Click **New conversation**, confirm store/source, enter a purpose and every participant reference, then **Prepare session**.
+4. Each participant reads their notice and confirms only for themselves using **Participant review** or their private link. An operator attestation does not grant consent.
+5. Recheck consent/roster/source/visible indicator, validate capture conditions, then explicitly **Start recording**. Allow the browser microphone permission.
+6. Stop, preview and **Analyze conversation**. Interruption/withdrawal stops capture and requires revalidation; reload does not preserve in-memory audio.
+7. A store manager/admin verifies findings, corrects/rejects them and approves the session. Only approved records enter shared intelligence. Review/assign suggested tasks separately. [Detailed V1 directions](docs/V1_USER_GUIDE.md).
 
-Mac/Chrome/Safari microphone permissions may need enabling in macOS System Settings → Privacy & Security → Microphone. Physical microphone permission cannot be verified by automated headless tests.
+Enable browser microphone permission and the OS microphone privacy setting (macOS System Settings or Windows Settings). Physical microphone permission cannot be verified by automated headless tests.
 
 ## Simulated wearable
 
 In **Devices → Register device**, create an explicitly simulated device. Save its one-time credential in a private file (mode `600`) outside source control. Do not put credentials into firmware source or command-line arguments.
 
+Prepare an operator-owned **Simulated wearable audio transfer** session in the app, obtain participant confirmations and finalize it. Then use its upload session ID:
+
 ```bash
 .venv/bin/python device-simulator/submit.py /absolute/path/conversation.wav \
   --device-id YOUR_REGISTERED_DEVICE_ID \
   --credential-file /absolute/path/private-device-credential \
-  --consent-attested
+  --session-id OPERATOR_PREPARED_UPLOAD_SESSION_ID
 ```
 
-The simulator uploads real audio, checks chunk and whole-file SHA256, completes the session, and polls genuine processing status. Exit `0` means full processing succeeded, `2` means processing failed, and `3` means it remains pending. Reuse `--idempotency-key SAME_KEY` and identical file/title/chunk size to resume an interrupted submission. The client rejects credentials for devices not marked simulated. [Device API contract](docs/DEVICE_API_SPEC.md).
+Device credentials cannot create participant consent. The simulator submits real audio to the prepared session with chunk/whole-file checksums. Exit `0` means post-session processing succeeded and needs review; `2` means failed, `3` means still pending. Reuse the same prepared upload ID and file to resume. [Current device API](docs/DEVICE_API_SPEC.md).
 
 A physical wearable provisions a distinct revocable credential, creates a session, submits encoded audio/chunks over HTTPS, completes the checksum handshake, and polls status. The ingestion boundary normalizes audio into mono 16 kHz PCM; speech, extraction, persistence, tasks and dashboard are exactly the same downstream components. [Hardware integration](docs/HARDWARE_INTEGRATION.md).
 
@@ -74,8 +84,8 @@ A physical wearable provisions a distinct revocable credential, creates a sessio
 .venv/bin/python -m alembic -c backend/alembic.ini upgrade head
 ./scripts/test.sh                          # backend + frontend tests + production build
 cd frontend && npm run e2e                 # Chrome, simulated mic, isolated TEST DOUBLE AI
-# From repository root, with your own authorized audio and configured real providers:
-.venv/bin/python scripts/verify_real.py /absolute/path/speech.wav
+# From repository root, only with generated speech/no human participants and real providers:
+.venv/bin/python scripts/verify_real.py /absolute/path/generated-speech.wav --synthetic-fixture --require-complete
 ```
 
 Stop the running server with **Ctrl+C** in its terminal or `./scripts/stop.sh` from this directory. Only one backend process/worker is supported. Local API docs: `/docs`; OpenAPI: `/openapi.json`; exported contract: `shared/api-contracts/openapi.json`.

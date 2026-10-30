@@ -1,6 +1,7 @@
 from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -34,6 +35,6 @@ class Settings(BaseSettings):
             if not path.is_absolute():
                 setattr(self, name, ROOT / path)
         if not self.database_url:
-            self.database_url = f"sqlite:///{self.data_dir / 'neuaura.sqlite3'}"
+            self.database_url = URL.create("sqlite", database=str(self.data_dir / "neuaura.sqlite3")).render_as_string(hide_password=False)
         if not 1 <= self.retention_days <= 3650:
             raise ValueError("retention_days must be between 1 and 3650")

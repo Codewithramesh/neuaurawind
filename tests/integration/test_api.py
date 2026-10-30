@@ -7,15 +7,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func,select
 from backend.app.main import create_app
 from backend.app.models import (AudioFile,AuthSession,Consent,Conversation,Device,Evidence,Insight,Organization,
-                                ProcessingJob,Task,Transcript,UploadSession,User)
+                                ProcessingJob,Task,Transcript,UploadSession,User,ParticipantConsent,ReviewEvent)
 from backend.app.providers import ProcessingError
 from backend.app.security import password_hash
-from tests.conftest import TestExtractionProvider
+from tests.conftest import TestExtractionProvider, confirm_and_finalize, approve_results
 
 
 def create_session(client,headers=None,**overrides):
-    return client.post('/api/v1/sessions',headers={'Idempotency-Key':str(uuid4()),**(headers or {})},
-        json={'title':'Test capture','source_type':'browser','consent_attested':True,**overrides})
+    response=client.post('/api/v1/sessions',headers={'Idempotency-Key':str(uuid4()),**(headers or {})},
+        json={'title':'Test capture','source_type':'browser','consent_attested':True,
+              'purpose':'Test fixture feedback','participant_refs':['TEST participant'],**overrides})
+    if response.status_code==201: confirm_and_finalize(client,response.json())
+    return response
 
 
 def chunk(client,sid,data,sequence=0,headers=None,mime='audio/wav',checksum=None):
@@ -53,7 +56,7 @@ def test_consent_and_source_validation(client):
 
 
 def test_idempotent_session_and_conflict(client):
-    key=str(uuid4());body={'title':'Same capture','consent_attested':True}
+    key=str(uuid4());body={'title':'Same capture','consent_attested':True,'purpose':'Fixture test','participant_refs':['TEST participant']}
     first=client.post('/api/v1/sessions',headers={'Idempotency-Key':key},json=body)
     again=client.post('/api/v1/sessions',headers={'Idempotency-Key':key},json=body)
     assert first.json()['id']==again.json()['id']
@@ -103,17 +106,20 @@ def test_shared_pipeline_evidence_tasks_and_deletion(client,app,wav_bytes,submit
     assert detail['audio_retained'] is False
     assert not (settings.data_dir/'uploads'/cid/'original').exists()
     overview=client.get('/api/v1/overview').json()
-    assert (overview['succeeded'],overview['negative'],overview['open_tasks'])==(1,1,1)
+    assert (overview['succeeded'],overview['negative'],overview['open_tasks'])==(1,0,0)
+    assert overview['awaiting_review']==1
+    approve_results(client,cid)
+    assert client.get('/api/v1/overview').json()['negative']==1
     task=detail['tasks'][0]
     for status in ['approved','completed','approved','dismissed']:
-        response=client.patch('/api/v1/tasks/'+task['id'],json={'status':status,'owner':'Manager','due_date':'2026-12-01'})
+        response=client.patch('/api/v1/tasks/'+task['id'],json={'status':status,'owner_id':client.get('/api/v1/auth/me').json()['user']['id'],'due_date':'2026-12-01'})
         assert response.status_code==200 and response.json()['status']==status
     assert client.patch('/api/v1/tasks/'+task['id'],json={'status':None}).status_code==422
     assert client.get('/api/v1/conversations?q=coffee').json()[0]['id']==cid
     assert client.get('/api/v1/conversations?q=zzzz').json()==[]
     assert client.delete('/api/v1/conversations/'+cid).status_code==204
     with app.state.factory() as db:
-        for model in [Conversation,UploadSession,AudioFile,Transcript,Insight,Evidence,Task,ProcessingJob,Consent]:
+        for model in [Conversation,UploadSession,AudioFile,Transcript,Insight,Evidence,Task,ProcessingJob,Consent,ParticipantConsent,ReviewEvent]:
             assert db.scalar(select(func.count()).select_from(model))==0,model.__name__
     assert client.get('/api/v1/overview').json()['total_conversations']==0
 
@@ -150,7 +156,7 @@ def test_device_credentials_revocation_and_same_pipeline(client,app,wav_bytes,su
     detail=client.get('/api/v1/conversations/'+cid).json()
     assert detail['status']=='complete' and detail['device_id']==device['id']
     assert detail['transcript']['provider']=='TEST_DOUBLE'
-    assert create_session(client,headers=auth).status_code==422
+    assert create_session(client,headers=auth).status_code==403
     assert client.post(f"/api/v1/devices/{device['id']}/revoke").status_code==200
     assert client.get(f"/api/v1/devices/{device['id']}",headers=auth).status_code==401
 
@@ -158,9 +164,9 @@ def test_device_credentials_revocation_and_same_pipeline(client,app,wav_bytes,su
 def test_device_cannot_access_other_device_session(client):
     devices=[client.post('/api/v1/devices/register',json={'name':f'D{i}','model':'test','simulated':True}).json() for i in range(2)]
     auth=[{'Authorization':'Bearer '+d['credential']} for d in devices]
-    session=create_session(client,headers=auth[0],source_type='device').json()
+    session=create_session(client,source_type='device',device_id=devices[0]['id']).json()
     assert client.get('/api/v1/sessions/'+session['id']+'/status',headers=auth[1]).status_code==404
-    assert client.post(f"/api/v1/devices/{devices[1]['id']}/sessions",headers={**auth[0],'Idempotency-Key':str(uuid4())},json={'title':'Test','source_type':'device','consent_attested':True}).status_code==403
+    assert client.post(f"/api/v1/devices/{devices[1]['id']}/sessions",headers={**auth[0],'Idempotency-Key':str(uuid4())},json={'title':'Test','source_type':'device','consent_attested':True,'purpose':'Fixture test','participant_refs':['TEST participant']}).status_code==403
 
 
 def test_organization_isolation(client,app,wav_bytes,submit):
@@ -189,7 +195,8 @@ def test_persistence_survives_new_app(client,app,settings,wav_bytes,submit,speec
         response=restarted.post('/api/v1/auth/login',json={'email':'admin@example.test','password':'test-password-2026'})
         assert response.status_code==200
         assert restarted.get('/api/v1/conversations/'+cid).json()['status']=='complete'
-        assert restarted.get('/api/v1/overview').json()['open_tasks']==1
+        assert restarted.get('/api/v1/overview').json()['open_tasks']==0
+        assert restarted.get('/api/v1/overview').json()['awaiting_review']==1
 
 
 def test_retention_removes_old_conversation_and_files(client,app,wav_bytes,submit,settings):

@@ -20,6 +20,7 @@ class Organization(Base):
     name = Column(String(120), nullable=False)
     industry = Column(String(30), nullable=False, default="restaurant")
     categories = Column(JSON, nullable=False, default=list)
+    retention_policy = Column(JSON, nullable=False, default=dict)
     created_at = Column(String, default=now, nullable=False)
 
 
@@ -30,6 +31,23 @@ class User(Base):
     email = Column(String(254), unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False, default="admin")
+    active = Column(Boolean, nullable=False, default=True)
+
+
+class Store(Base):
+    __tablename__ = "stores"
+    id = Column(String, primary_key=True, default=uid)
+    org_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(120), nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
+class StoreMembership(Base):
+    __tablename__ = "store_memberships"
+    __table_args__ = (UniqueConstraint("user_id", "store_id"),)
+    id = Column(String, primary_key=True, default=uid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    store_id = Column(String, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False)
 
 
 class AuthSession(Base):
@@ -44,6 +62,8 @@ class Device(Base):
     __tablename__ = "devices"
     id = Column(String, primary_key=True, default=uid)
     org_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    store_id = Column(String, ForeignKey("stores.id", ondelete="RESTRICT"))
+    capabilities = Column(JSON, nullable=False, default=lambda: {"audio_transfer": True, "remote_controls": False, "recording_indicator": False})
     name = Column(String(100), nullable=False)
     device_type = Column(String, nullable=False)
     model = Column(String(100), nullable=False)
@@ -61,6 +81,14 @@ class Conversation(Base):
     __tablename__ = "conversations"
     id = Column(String, primary_key=True, default=uid)
     org_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    store_id = Column(String, ForeignKey("stores.id", ondelete="RESTRICT"), index=True)
+    created_by = Column(String, ForeignKey("users.id", ondelete="SET NULL"))
+    purpose = Column(String(500), nullable=False, default="Consent revalidation required")
+    session_state = Column(String, nullable=False, default="awaiting_consent", index=True)
+    consent_version = Column(Integer, nullable=False, default=1)
+    capture_conditions_confirmed = Column(Boolean, nullable=False, default=False)
+    state_updated_at = Column(String, nullable=False, default=now)
+    review_status = Column(String, nullable=False, default="unreviewed")
     device_id = Column(String, ForeignKey("devices.id", ondelete="SET NULL"))
     title = Column(String(160), nullable=False)
     source_type = Column(String, nullable=False)
@@ -128,6 +156,15 @@ class Insight(Base):
     basis = Column(String, nullable=False)
     confidence = Column(Float, nullable=False)
     uncertainty = Column(Text, nullable=False)
+    review_status = Column(String, nullable=False, default="unreviewed", index=True)
+    reviewed_by = Column(String, ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at = Column(String)
+    evidence_status = Column(String, nullable=False, default="exact_quote")
+    confidence_method = Column(String, nullable=False, default="uncalibrated_model_estimate")
+    impact = Column(Text)
+    recommendation = Column(Text)
+    success_metric = Column(Text)
+    priority_rationale = Column(Text)
     created_at = Column(String, default=now, nullable=False)
 
 
@@ -149,6 +186,10 @@ class Task(Base):
     description = Column(Text, nullable=False)
     priority = Column(String, nullable=False, default="medium")
     owner = Column(String(100))
+    owner_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"))
+    title = Column(String(180), nullable=False, default="Suggested follow-up")
+    deadline_basis = Column(String, nullable=False, default="not_established")
+    deadline_quote = Column(Text)
     due_date = Column(String)
     status = Column(String, nullable=False, default="suggested")
     created_at = Column(String, default=now, nullable=False)
@@ -177,6 +218,32 @@ class Consent(Base):
     created_at = Column(String, default=now, nullable=False)
 
 
+class ParticipantConsent(Base):
+    __tablename__ = "participant_consents"
+    id = Column(String, primary_key=True, default=uid)
+    conversation_id = Column(String, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    participant_ref = Column(String(80), nullable=False)
+    token_hash = Column(String, unique=True)
+    token_expires_at = Column(String)
+    status = Column(String, nullable=False, default="pending")
+    version = Column(Integer, nullable=False, default=1)
+    notice_version = Column(String, nullable=False, default="v1-2026-10-29")
+    granted_at = Column(String)
+    withdrawn_at = Column(String)
+    created_at = Column(String, nullable=False, default=now)
+
+
+class ReviewEvent(Base):
+    __tablename__ = "review_events"
+    id = Column(String, primary_key=True, default=uid)
+    conversation_id = Column(String, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_id = Column(String, nullable=False)
+    actor = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    fields = Column(JSON, nullable=False, default=list)
+    created_at = Column(String, nullable=False, default=now)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
     id = Column(String, primary_key=True, default=uid)
@@ -184,4 +251,5 @@ class AuditEvent(Base):
     actor = Column(String, nullable=False)
     action = Column(String, nullable=False)
     target_id = Column(String, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
     created_at = Column(String, default=now, nullable=False)

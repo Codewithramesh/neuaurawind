@@ -4,37 +4,59 @@
     {
       "label": "NEUAURA: Start app and AI",
       "type": "process",
-      "command": "/Users/mukkararamesh/Documents/ChatGPT/neuaurab2b/.venv/bin/python",
+      "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "scripts/desktop.py",
         "start"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONUTF8": "1"
+        }
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+      }
     },
     {
       "label": "NEUAURA: Stop app and AI",
       "type": "process",
-      "command": "/Users/mukkararamesh/Documents/ChatGPT/neuaurab2b/.venv/bin/python",
+      "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "scripts/desktop.py",
         "stop"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONUTF8": "1"
+        }
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+      }
     },
     {
       "label": "NEUAURA: Run automated tests",
-      "type": "shell",
-      "command": "./scripts/test.sh",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONUTF8": "1"
+        }
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+      },
+      "args": [
+        "scripts/manage.py",
+        "test"
+      ]
     }
   ]
 }

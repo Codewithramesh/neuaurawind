@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { human } from "./api";
 import {
   Loader2,
@@ -30,7 +31,15 @@ export function OverviewPage({
   onNavigate: (p: Page) => void;
   settings: Settings | null;
 }) {
-  const { data, error } = useResource<Overview>("/overview");
+  const [from, setFrom] = useState(""),
+    [to, setTo] = useState("");
+  const { data, error } = useResource<Overview>(
+    "/overview?" +
+      new URLSearchParams({
+        ...(from ? { date_from: from } : {}),
+        ...(to ? { date_to: to } : {}),
+      }),
+  );
   if (!data)
     return (
       <>
@@ -69,7 +78,7 @@ export function OverviewPage({
       label: "Open actions",
       value: data.open_tasks,
       icon: ListTodo,
-      help: "Suggested & approved tasks",
+      help: "Outstanding approved tasks",
       color: "purple",
     },
   ];
@@ -85,15 +94,52 @@ export function OverviewPage({
           </button>
         }
       />
+      {data && (
+        <div className="processing-notice">
+          <div>
+            <strong>{data.awaiting_review} sessions awaiting review</strong>
+            <p>{data.sample_note}</p>
+          </div>
+        </div>
+      )}
       <ErrorNotice message={error} />
       <div className="date-row">
         <span>
           <span className="live-dot" /> Your business signals
         </span>
         <span className="range-label">
-          <Clock3 size={14} /> All time{" "}
+          <Clock3 size={14} /> {from || to ? "Selected range" : "All time"}{" "}
           <span className="muted">· Updated automatically</span>
         </span>
+      </div>
+      <div className="filters">
+        <label className="date-filter">
+          Dashboard from
+          <input
+            aria-label="Dashboard from"
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </label>
+        <label className="date-filter">
+          Dashboard to
+          <input
+            aria-label="Dashboard to"
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </label>
+        <button
+          className="text-button"
+          onClick={() => {
+            setFrom("");
+            setTo("");
+          }}
+        >
+          Clear dashboard dates
+        </button>
       </div>
       <div className="metrics-grid">
         {metrics.map(({ label, value, icon: Icon, help, color }) => (
@@ -197,7 +243,7 @@ export function OverviewPage({
                       <b>{String(i + 1).padStart(2, "0")}</b>
                       {human(x.topic)}
                     </span>
-                    <span className="subtle-tag">{x.count} signals</span>
+                    <span className="subtle-tag">{x.count} sessions</span>
                   </div>
                 ))}
             </div>

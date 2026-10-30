@@ -1,0 +1,48 @@
+name: Native macOS and Windows compatibility
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: Neuaura With Spaces
+    env:
+      PYTHONUTF8: '1'
+      NEUAURA_DATA_DIR: local-data/ci
+      NEUAURA_DATABASE_URL: ''
+      NEUAURA_WORKER_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Neuaura With Spaces
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Neuaura With Spaces/frontend/package-lock.json
+      - run: python scripts/setup.py --no-shortcuts
+      - name: Windows CMD launchers and application regression tests
+        if: runner.os == 'Windows'
+        run: cmd /c scripts\test.cmd
+      - name: macOS launcher and application regression tests
+        if: runner.os == 'macOS'
+        run: ./scripts/test.sh
+      - name: Dependency consistency
+        if: runner.os == 'Windows'
+        run: .venv\Scripts\python.exe -m pip check
+      - name: macOS dependency consistency
+        if: runner.os == 'macOS'
+        run: .venv/bin/python -m pip check

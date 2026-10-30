@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ListTodo, Check, ArrowRight } from "lucide-react";
 import { useResource } from "./useResource";
 import { SectionTitle, ErrorNotice, Empty, Badge } from "./ui";
 import { api, json, human } from "./api";
-import type { Task } from "./types";
+import type { Member, Task } from "./types";
 
 export function TasksPage({ onOpen }: { onOpen: (id: string) => void }) {
   const { data, error, refresh } = useResource<Task[]>("/tasks");
@@ -65,6 +65,13 @@ export function TaskRow({
   const [editing, setEditing] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  useEffect(() => {
+    if (editing)
+      void api<Member[]>("/members")
+        .then(setMembers)
+        .catch(() => {});
+  }, [editing]);
   async function update(values: unknown) {
     setBusy(true);
     setError("");
@@ -100,12 +107,24 @@ export function TaskRow({
               const f = new FormData(e.currentTarget);
               void update({
                 description: f.get("description"),
-                owner: f.get("owner") || null,
+                title: f.get("title"),
+                owner_id: f.get("owner_id") || null,
                 due_date: f.get("due_date") || null,
+                deadline_basis: f.get("deadline_basis"),
+                deadline_quote: f.get("deadline_quote") || null,
                 priority: f.get("priority"),
               });
             }}
           >
+            <label>
+              Task title
+              <input
+                name="title"
+                defaultValue={task.title}
+                required
+                maxLength={180}
+              />
+            </label>
             <label>
               Description
               <textarea
@@ -118,11 +137,16 @@ export function TaskRow({
             <div className="form-row">
               <label>
                 Owner
-                <input
-                  name="owner"
-                  maxLength={100}
-                  defaultValue={task.owner || ""}
-                />
+                <select name="owner_id" defaultValue={task.owner_id || ""}>
+                  <option value="">Unassigned</option>
+                  {members
+                    .filter((m) => m.active)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.email}
+                      </option>
+                    ))}
+                </select>
               </label>
               <label>
                 Due date
@@ -141,6 +165,30 @@ export function TaskRow({
                 </select>
               </label>
             </div>
+            <label>
+              Deadline basis
+              <select
+                name="deadline_basis"
+                defaultValue={
+                  task.deadline_basis === "reviewer_confirmed_commitment"
+                    ? task.deadline_basis
+                    : "operator_set"
+                }
+              >
+                <option value="operator_set">Date set by operator</option>
+                <option value="reviewer_confirmed_commitment">
+                  Reviewer-confirmed spoken commitment
+                </option>
+              </select>
+            </label>
+            <label>
+              Exact supporting commitment quote (when applicable)
+              <textarea
+                name="deadline_quote"
+                maxLength={3000}
+                defaultValue={task.deadline_quote || ""}
+              />
+            </label>
             <div className="button-row">
               <button className="button primary small" disabled={busy}>
                 Save changes
@@ -159,7 +207,9 @@ export function TaskRow({
             <h3>{task.description}</h3>
             <p className="muted">
               {task.owner ? `Assigned to ${task.owner}` : "Unassigned"}
-              {task.due_date ? ` · Due ${task.due_date}` : ""}
+              {task.due_date
+                ? ` · Due ${task.due_date} (${human(task.deadline_basis)})`
+                : " · No deadline established"}
             </p>
             <div className="task-actions">
               <button

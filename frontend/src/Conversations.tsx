@@ -64,11 +64,25 @@ export function ConversationsPage({
           }}
         >
           <option value="">All statuses</option>
-          {["complete", "processing", "queued", "failed", "awaiting_audio"].map(
-            (s) => (
-              <option key={s}>{s}</option>
-            ),
-          )}
+          {[
+            "needs_review",
+            "approved",
+            "awaiting_consent",
+            "ready",
+            "recording",
+            "paused",
+            "interrupted",
+            "finalizing",
+            "complete",
+            "processing",
+            "queued",
+            "failed",
+            "awaiting_audio",
+            "restricted",
+            "cancelled",
+          ].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
         </select>
         <label className="date-filter">
           From
@@ -145,7 +159,7 @@ export function ConversationsPage({
                       </span>
                     </td>
                     <td>
-                      <Badge status={c.status} />
+                      <Badge status={c.session_state} />
                     </td>
                     <td>{c.duration ? durationLabel(c.duration) : "—"}</td>
                     <td className="nowrap">{dateLabel(c.created_at)}</td>

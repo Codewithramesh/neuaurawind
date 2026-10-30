@@ -24,7 +24,7 @@ class TestSpeechProvider:
     def transcribe(self, audio, language):
         self.calls += 1
         assert audio.is_file()
-        return TranscriptionResult(TEST_TEXT, [{"start":0.0,"end":3.0,"text":TEST_TEXT}], 'en', 'TEST_DOUBLE', 'TEST_ONLY')
+        return TranscriptionResult(TEST_TEXT, [{"start":0.0,"end":1.0,"text":TEST_TEXT}], 'en', 'TEST_DOUBLE', 'TEST_ONLY')
 
 
 class TestExtractionProvider:
@@ -83,14 +83,40 @@ def wav_bytes():
     return build
 
 
+def confirm_and_finalize(client, session):
+    """Test-only participant actions. Never imported by application code."""
+    for participant in session.get('participant_links', []):
+        response = client.post('/api/v1/participant-consent', headers={'X-Consent-Token':participant['token']},
+            json={'decision':'grant','informed':True})
+        assert response.status_code == 200, response.text
+    cid = session['conversation_id']
+    current = client.get('/api/v1/conversations/'+cid).json()
+    for action in ['ready','stop']:
+        response = client.post('/api/v1/conversations/'+cid+'/transition', json={'action':action,
+            'expected_state':current['session_state'],'consent_version':current['consent_version'],'conditions_confirmed':True})
+        assert response.status_code == 200, response.text
+        current=response.json()
+
+
+def approve_results(client, cid):
+    detail=client.get('/api/v1/conversations/'+cid).json()
+    for finding in detail['insights']:
+        response=client.patch('/api/v1/insights/'+finding['id']+'/review',json={'review_status':'approved','sharing_checked':True})
+        assert response.status_code==200,response.text
+    response=client.post('/api/v1/conversations/'+cid+'/approve')
+    assert response.status_code==200,response.text
+
+
 @pytest.fixture
 def submit(client):
     def ingest(audio, source='browser', auth=None, key=None, title='Authorized test conversation'):
         headers = auth or {}
-        response = client.post('/api/v1/sessions', headers={**headers,'Idempotency-Key':key or str(uuid4())},
-            json={'title':title,'source_type':source,'consent_attested':True})
+        device_id=client.get('/api/v1/devices').json()[0]['id'] if source=='device' else None
+        response = client.post('/api/v1/sessions', headers={'Idempotency-Key':key or str(uuid4())},
+            json={'title':title,'source_type':source,'consent_attested':True,'purpose':'Test fixture business feedback','participant_refs':['TEST participant'],'device_id':device_id,'store_id':client.get('/api/v1/stores').json()[0]['id']})
         assert response.status_code == 201, response.text
         session = response.json()
+        confirm_and_finalize(client, session)
         response = client.post(f"/api/v1/sessions/{session['id']}/audio", headers={**headers,
             'Content-Type':'audio/wav','X-Chunk-SHA256':hashlib.sha256(audio).hexdigest()}, content=audio)
         assert response.status_code == 200, response.text

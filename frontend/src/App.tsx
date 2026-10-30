@@ -13,7 +13,7 @@ import {
   CircleHelp,
   Loader2,
 } from "lucide-react";
-import { api, setCSRF, human } from "./api";
+import { api, setCSRF, setStoreScope, human } from "./api";
 import type { UserContext, Settings } from "./types";
 import type { Page } from "./navigation";
 import { Brand, ErrorNotice } from "./ui";
@@ -25,6 +25,8 @@ import { TasksPage } from "./Tasks";
 import { DevicesPage } from "./Devices";
 import { SettingsPage } from "./Settings";
 import { Recorder } from "./Recorder";
+import { ParticipantConsent } from "./ParticipantConsent";
+import { GovernanceSettings } from "./GovernanceSettings";
 import { ConversationPanel } from "./ConversationPanel";
 
 const navigation: {
@@ -40,6 +42,22 @@ const navigation: {
 ];
 
 export default function App() {
+  const [hash, setHash] = useState(location.hash);
+  useEffect(() => {
+    const change = () => setHash(location.hash);
+    window.addEventListener("hashchange", change);
+    return () => window.removeEventListener("hashchange", change);
+  }, []);
+  if (hash.startsWith("#consent/"))
+    return (
+      <main className="consent-page">
+        <ParticipantConsent token={hash.slice(9)} />
+      </main>
+    );
+  return <Workspace />;
+}
+function Workspace() {
+  const [selectedStore, setSelectedStore] = useState("");
   const [context, setContext] = useState<UserContext | null>(null),
     [initializing, setInitializing] = useState(true),
     [bootstrap, setBootstrap] = useState(false),
@@ -72,6 +90,13 @@ export default function App() {
     ]);
     setCSRF(me.csrf);
     setContext(me);
+    setSelectedStore((current) => {
+      const next = me.stores?.some((s) => s.id === current)
+        ? current
+        : me.stores?.[0]?.id || "";
+      setStoreScope(next);
+      return next;
+    });
     setSettings(setup);
   }, []);
   useEffect(() => {
@@ -175,6 +200,8 @@ export default function App() {
               try {
                 await api("/auth/logout", { method: "POST" });
                 setCSRF("");
+                setStoreScope("");
+                setSelectedStore("");
                 setContext(null);
                 setNotice("");
               } catch (error) {
@@ -187,7 +214,7 @@ export default function App() {
               {context.user.email[0].toUpperCase()}
             </span>
             <span>
-              <strong>Workspace admin</strong>
+              <strong>{human(context.user.role || "staff")}</strong>
               <small>{context.user.email}</small>
             </span>
             <LogOut size={16} />
@@ -215,6 +242,24 @@ export default function App() {
             <strong>{page === "tasks" ? "Action center" : human(page)}</strong>
           </div>
           <div className="topbar-right">
+            <label className="store-picker">
+              Store
+              <select
+                aria-label="Selected store"
+                value={selectedStore}
+                disabled={recording || !!detail}
+                onChange={(e) => {
+                  setStoreScope(e.target.value);
+                  setSelectedStore(e.target.value);
+                }}
+              >
+                {context.stores?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <span className={`live-pill ${connected ? "" : "disconnected"}`}>
               <i /> {connected ? "Workspace connected" : "Connection lost"}
             </span>
@@ -231,7 +276,7 @@ export default function App() {
             </div>
           </div>
         </header>
-        <main id="main">
+        <main id="main" key={selectedStore}>
           <ErrorNotice message={notice} />
           {page === "overview" && (
             <OverviewPage
@@ -249,7 +294,14 @@ export default function App() {
           )}
           {page === "insights" && <InsightsPage onOpen={open} />}
           {page === "tasks" && <TasksPage onOpen={open} />}
-          {page === "devices" && <DevicesPage />}
+          {page === "devices" && (
+            <DevicesPage
+              canAdmin={["owner", "admin"].includes(context.user.role)}
+            />
+          )}
+          {page === "settings" && (
+            <GovernanceSettings settings={settings} onChange={loadContext} />
+          )}
           {page === "settings" && (
             <SettingsPage
               onChange={async () => {
@@ -267,7 +319,18 @@ export default function App() {
       </div>
       {recording && (
         <Recorder
-          settings={settings}
+          settings={
+            settings
+              ? {
+                  ...settings,
+                  stores: [...settings.stores].sort(
+                    (a, b) =>
+                      Number(b.id === selectedStore) -
+                      Number(a.id === selectedStore),
+                  ),
+                }
+              : null
+          }
           onClose={() => setRecording(false)}
           onComplete={open}
         />
@@ -275,6 +338,7 @@ export default function App() {
       {detail && (
         <ConversationPanel
           id={detail}
+          canReview={["owner", "admin", "manager"].includes(context.user.role)}
           onClose={() => setDetail(null)}
           onDeleted={() => setDetail(null)}
         />

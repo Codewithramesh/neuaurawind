@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 import path from "node:path";
 const root = path.resolve(import.meta.dirname, "..");
+const python = path.join(root, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "*.spec.ts",
@@ -23,7 +24,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `cd "${root}" && .venv/bin/python -m uvicorn tests.e2e.server:app --host 127.0.0.1 --port 8011`,
+    command: `"${python}" -m uvicorn tests.e2e.server:app --host 127.0.0.1 --port 8011`,
+    cwd: root,
     url: "http://127.0.0.1:8011/api/v1/health",
     reuseExistingServer: false,
     timeout: 30000,

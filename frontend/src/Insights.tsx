@@ -1,3 +1,4 @@
+import { ApprovedExport } from "./ApprovedExport";
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { useResource } from "./useResource";
@@ -16,8 +17,9 @@ export function InsightsPage({ onOpen }: { onOpen: (id: string) => void }) {
       <SectionTitle
         eyebrow="CONNECT THE DOTS"
         title="Business insights"
-        description="Find the signals in your everyday conversations."
+        description="Only approved findings from approved sessions appear here. One conversation does not establish a trend."
       />
+      <ApprovedExport />
       <div className="tabs">
         {["all", "positive", "negative", "neutral"].map((s) => (
           <button
@@ -39,7 +41,7 @@ export function InsightsPage({ onOpen }: { onOpen: (id: string) => void }) {
           <Empty
             icon={Lightbulb}
             title="A fresh perspective is on its way"
-            description="Insights from successfully processed conversations will appear here, with direct links to their evidence."
+            description="Findings appear here after a reviewer approves the evidence and the session."
           />
         )}
       </section>

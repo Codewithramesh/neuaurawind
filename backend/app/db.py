@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+from .storage import private_directory
 
 
 def database(settings):
-    settings.data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    private_directory(settings.data_dir)
     args = {"check_same_thread": False, "timeout": 30} if settings.database_url.startswith("sqlite") else {}
     engine = create_engine(settings.database_url, connect_args=args)
     if engine.dialect.name == "sqlite":

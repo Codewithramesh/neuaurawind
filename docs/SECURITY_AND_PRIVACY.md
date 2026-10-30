@@ -1,8 +1,11 @@
 # Security and privacy
 
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 ## Implemented controls
 
-- Loopback binding by default. Authentication required for all business records. A first-run setup token is generated on the Mac with mode 600 and deleted after bootstrap. No public self-provisioning endpoint or default password.
+- Loopback binding by default. Authentication required for all business records. A first-run setup token is generated in the private local data folder (POSIX mode 600 on macOS; inherited private NTFS ACL on Windows) and deleted after bootstrap. No public self-provisioning endpoint or default password.
 - PBKDF2-SHA256 passwords with independent random salts and 600,000 iterations; constant-time comparisons. Auth sessions use random tokens, SHA256 storage, 12-hour expiry, HttpOnly and SameSite=Strict cookies. CSRF token required on cookie-authenticated mutations; unsafe cross-origin requests are rejected.
 - TrustedHost allowlist reduces DNS rebinding. Allowed hosts must be configured for a private HTTPS phone URL. CSP, no-sniff, same-origin referrer policy, frame denial, no-store API responses and a self-only microphone permission policy are set.
 - Organization ownership derives from authentication. Tenant filters apply to conversations, insights, tasks, devices, aggregates, audio and audit reads. Devices are additionally restricted to their own upload sessions. Cross-tenant record access returns 404.
@@ -31,4 +34,6 @@ If audio retention is enabled, playback remains authenticated and files expire w
 
 This is a single-machine MVP, not a certified or penetration-tested production system. First-run UI provisions one workspace/admin. Multi-user invites, role administration, SSO/MFA, password reset, credential rotation, account deletion, encryption at rest/key management, shared quotas, multi-worker claims/leases, malware sandboxing, formal security review and regulatory validation are not implemented. PostgreSQL and physical hardware are not verified.
 
-Use FileVault and access-controlled backups on the Mac. Do not expose the development server or Vite publicly. For phone testing, use private Tailscale Serve with tailnet access control, trusted HTTPS, Secure cookies and configured allowed hosts. Read [phone setup](PHONE_TESTING.md). Public production deployment needs its own reviewed identity, TLS, rate-limit, retention and operations configuration.
+Use FileVault (macOS) or BitLocker/device encryption (Windows), with access-controlled backups. Do not expose the development server or Vite publicly. For phone testing, use private Tailscale Serve with tailnet access control, trusted HTTPS, Secure cookies and configured allowed hosts. Read [phone setup](PHONE_TESTING.md). Public production deployment needs its own reviewed identity, TLS, rate-limit, retention and operations configuration.
+
+Windows open-file locks: playback permission is revoked when consent is withdrawn. Physical removal of files held open by a decoder/browser may be delayed; durable cleanup markers survive restart, and the independent watchdog retries every two seconds. Pending cleanup blocks new upload writes for that session. When audio retention is disabled, original audio, normalized audio and uploaded chunks are removed after transcription. See [Windows setup](WINDOWS_SETUP.md).

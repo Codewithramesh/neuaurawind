@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-.venv/bin/python -m pytest "$@"
-(cd frontend && npm test && npm run build)
+exec .venv/bin/python scripts/manage.py test "$@"

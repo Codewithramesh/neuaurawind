@@ -13,12 +13,13 @@ parser = argparse.ArgumentParser(description="Submit authorized real audio throu
 parser.add_argument("audio", type=Path)
 parser.add_argument("--url", default="http://127.0.0.1:8000")
 parser.add_argument("--device-id", required=True)
-parser.add_argument("--credential-file", type=Path, help="chmod 600 file containing the per-device credential; or NEUAURA_DEVICE_TOKEN")
+parser.add_argument("--session-id", required=True, help="Upload session ID prepared and consented by an operator in the app")
+parser.add_argument("--credential-file", type=Path, help="Private file containing the per-device credential (POSIX chmod 600 or restricted Windows ACL); or NEUAURA_DEVICE_TOKEN")
 parser.add_argument("--chunk-bytes", type=int, default=4*1024*1024)
 parser.add_argument("--idempotency-key", default=None, help="Reuse this key to resume the same session")
 parser.add_argument("--title", default="Simulated wearable test")
 parser.add_argument("--language", default="en")
-parser.add_argument("--consent-attested", action="store_true", required=True, help="Required explicit attestation of participant permission")
+
 parser.add_argument("--timeout", type=int, default=300)
 args = parser.parse_args()
 if args.chunk_bytes < 1 or args.chunk_bytes > 50*1024*1024:
@@ -50,8 +51,10 @@ with httpx.Client(base_url=base, headers={"Authorization": "Bearer " + token}, t
     device = request("GET", f"/devices/{args.device_id}")
     if not device["simulated"]:
         parser.error("This client only operates on explicitly simulated devices. Register one with simulated=true.")
-    session = request("POST", f"/devices/{args.device_id}/sessions", headers={"Idempotency-Key": key},
-        json={"title":args.title,"source_type":"device","language":args.language,"consent_attested":True})
+    session = {"id":args.session_id}
+    prepared = request("GET", f"/sessions/{args.session_id}/status")
+    if prepared["device_id"] != args.device_id or not prepared["consent_valid"] or prepared["session_state"] not in {"finalizing", "processing", "needs_review", "approved"}:
+        parser.error("An operator must obtain participant confirmations, validate conditions and finalize this device session in the app first.")
     hasher, count = hashlib.sha256(), 0
     mime = mimetypes.guess_type(args.audio)[0] or "application/octet-stream"
     with args.audio.open("rb") as audio:

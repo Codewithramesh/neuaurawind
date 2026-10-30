@@ -1,5 +1,10 @@
 # Actual test report — installed Mac configuration
 
+Windows portability update (30 October): [compatibility report](WINDOWS_COMPATIBILITY_REPORT.md) records 84 passing backend tests, 18 frontend tests, actual Mac launcher/model regression, and the remaining native Windows acceptance checks.
+
+> V1 update (29 October 2026): see [current workflow](V1_USER_GUIDE.md), [access/consent/retention](V1_ACCESS_AND_LIFECYCLE.md) and [current verification report](V1_IMPLEMENTATION_REPORT.md). Earlier test counts and operator-attestation instructions below describe the original MVP; participant confirmation and review now govern capture and sharing.
+
+
 Updated **27 October 2026**, Asia/Kolkata. Apple Silicon Mac, macOS 26.5.2, 8 GB memory; Python 3.12.0, Node 22.23.3. The local AI setup is now installed and the real audio-to-intelligence pipeline has passed. Physical MacBook/phone microphone acceptance remains **NOT VERIFIED**.
 
 ## Final configuration
